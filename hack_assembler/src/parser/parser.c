@@ -24,6 +24,7 @@ char *parser_symbol(Parser *parser);
 char *parser_dest(Parser *parser);
 char *parser_comp(Parser *parser);
 char *parser_jmp(Parser *parser);
+void parser_reset(Parser *parser);
 
 
 //Create a Parser from a assembly filename
@@ -82,7 +83,7 @@ Parser *parser_create(FILE *file_assembly){
 
 
     while((nread = getline(&buffer, &buffer_len, file_assembly)) != -1){
-        if(nread > 0 && buffer[nread-1] == '\n' || buffer[nread-1] == '\r'){
+        if(nread > 0 && (buffer[nread-1] == '\n' || buffer[nread-1] == '\r')){
             buffer[nread-1] = '\0';
         }
         
@@ -280,3 +281,8 @@ char *parser_jmp(Parser *parser){
     return NULL;
 }
 
+void parser_reset(Parser *parser){
+    if(!parser) return;
+    parser->curcommand = -1;
+    return;
+}

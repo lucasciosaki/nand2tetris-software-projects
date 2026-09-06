@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include "./parser/parser.h"
 #include "./code/code.h"
-#include "string.h"
+#include <string.h>
+#include "./symbol-table/symbol-table.h"
+#include <ctype.h>
+
 
 FILE *create_hack_file(const char *asm_filename) {
     char hack_filename[256];
@@ -38,8 +41,34 @@ int main(int argc, char *argv[]){
     if(!hack_file) exit(1);
     
     Parser *parser = parser_from_file(assembly_filename);
-    if(!parser) exit(1);
+    if(!parser) exit(2);
 
+    SymbolTable *st = symboltable_create();
+    if(!st) exit(3);
+
+    int counter = 0;
+    while(parser_has_more_commands(parser)){
+        
+        parser_advance(parser);
+        switch (parser_command_type(parser))
+        {
+        case COMMAND_A:
+            counter++;
+            break;
+        case COMMAND_C:
+            counter++;
+            break;
+        case COMMAND_L:
+            char *symbol = parser_symbol(parser);
+            symboltable_addEntry(st, symbol, counter);
+            break;
+        default:
+            break;
+        }
+    }
+    parser_reset(parser);
+
+    int curMem = 16;
     while(parser_has_more_commands(parser)){
         char command[17];
         parser_advance(parser);
@@ -47,11 +76,21 @@ int main(int argc, char *argv[]){
         {
         case COMMAND_A:
             char *symbol = parser_symbol(parser);
-            int value = atoi(symbol);
-            int_to_bin16(value, command);
-            break;
-        case COMMAND_L:
-            /* code */
+            if(isdigit((unsigned char) symbol[0])){
+                int value = atoi(symbol);
+                int_to_bin16(value, command);
+            }
+            else{
+                if(symboltable_contains(st, symbol)){
+                    int address = symboltable_getAddress(st, symbol);
+                    int_to_bin16(address, command);
+                }
+                else{
+                    symboltable_addEntry(st, symbol, curMem);
+                    int_to_bin16(curMem, command);
+                    curMem++;
+                }
+            }
             break;
         case COMMAND_C:
             char *dest_mnemonic, *comp_mnemonic, *jmp_mnemonic;
@@ -66,12 +105,15 @@ int main(int argc, char *argv[]){
             strcpy(command + 10, code_dest(dest_mnemonic));
             strcpy(command + 13, code_jmp(jmp_mnemonic));
             break;
-        
+        case COMMAND_L:
+            continue;
         default:
             break;
         }
 
         fprintf(hack_file, "%s\n", command);
     }
-    
+    parser_delete(&parser);
+    symboltable_delete(&st);
+    fclose(hack_file);
 }

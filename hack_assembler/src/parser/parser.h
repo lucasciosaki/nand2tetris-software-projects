@@ -24,6 +24,7 @@ char *parser_symbol(Parser *parser);
 char *parser_dest(Parser *parser);
 char *parser_comp(Parser *parser);
 char *parser_jmp(Parser *parser);
+void parser_reset(Parser *parser);
 
 
 #endif
