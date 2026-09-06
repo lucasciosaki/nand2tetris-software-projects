@@ -6,6 +6,7 @@
 #include <ctype.h>
 
 
+// Creates and opens a .hack output file based on the assembly input filename.
 FILE *create_hack_file(const char *asm_filename) {
     char hack_filename[256];
     
@@ -24,6 +25,7 @@ FILE *create_hack_file(const char *asm_filename) {
     return fopen(hack_filename, "w");
 }
 
+// Converts a non-negative integer into a 16-bit binary ASCII string.
 void int_to_bin16(int value, char *dest) {                        
         for (int i = 15; i >= 0; i--) {                                                                                               
             dest[15 - i] = ((value >> i) & 1) ? '1' : '0';            
@@ -32,6 +34,7 @@ void int_to_bin16(int value, char *dest) {
 }    
 
 
+// Main entry point orchestrating the two-pass assembler.
 int main(int argc, char *argv[]){
     if(argc != 2){
         printf("CORRECT USAGE: ./assembler [.asm code]");
@@ -46,6 +49,7 @@ int main(int argc, char *argv[]){
     SymbolTable *st = symboltable_create();
     if(!st) exit(3);
 
+    // Pass 1: Scan instructions and bind ROM addresses to label declarations (LABEL).
     int counter = 0;
     while(parser_has_more_commands(parser)){
         
@@ -66,8 +70,10 @@ int main(int argc, char *argv[]){
             break;
         }
     }
+    // Rewind parser to beginning for the second pass.
     parser_reset(parser);
 
+    // Pass 2: Translate instructions, resolve symbols/variables, and write machine code.
     int curMem = 16;
     while(parser_has_more_commands(parser)){
         char command[17];
@@ -113,6 +119,7 @@ int main(int argc, char *argv[]){
 
         fprintf(hack_file, "%s\n", command);
     }
+    // Deallocate resources and flush output file.
     parser_delete(&parser);
     symboltable_delete(&st);
     fclose(hack_file);

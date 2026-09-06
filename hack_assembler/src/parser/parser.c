@@ -4,6 +4,7 @@
 #include <string.h>
 #include "parser.h"
 
+// Parser state holding commands list, counters, and extracted field buffers.
 typedef struct _parser{
     char **commands;
     int ncommands;
@@ -27,7 +28,7 @@ char *parser_jmp(Parser *parser);
 void parser_reset(Parser *parser);
 
 
-//Create a Parser from a assembly filename
+// Creates a Parser instance from an assembly filename.
 Parser *parser_from_file(char *filename_assembly){
     FILE *file_assembly;
     if (filename_assembly == NULL){
@@ -46,7 +47,7 @@ Parser *parser_from_file(char *filename_assembly){
     return parser;
 }
 
-//Create a Parser from a assembly file
+// Reads assembly file, strips comments and whitespace, and stores commands in memory.
 Parser *parser_create(FILE *file_assembly){
 
     if (file_assembly == NULL){
@@ -151,6 +152,7 @@ Parser *parser_create(FILE *file_assembly){
         
 }
 
+// Frees all commands, string buffers, and the Parser structure.
 void parser_delete(Parser **parser_ref){
     if(!(parser_ref) || !(*parser_ref)) return;
     Parser *parser = *parser_ref;
@@ -163,17 +165,20 @@ void parser_delete(Parser **parser_ref){
     return;
 }
 
+// Checks if there are more instructions left in the file.
 bool parser_has_more_commands(Parser *parser){
     if(!parser) return false;
     return (parser->curcommand + 1) < parser->ncommands ? true : false;
 }
 
+// Advances the parser to the next command.
 void parser_advance(Parser *parser){
     if(parser_has_more_commands(parser)){
         parser->curcommand++;
     }
 }
 
+// Returns the type of the current command (A, C, or L).
 CommandType parser_command_type(Parser *parser){
     
     if(!parser || parser->curcommand < 0 || parser->curcommand >= parser->ncommands)
@@ -190,6 +195,7 @@ CommandType parser_command_type(Parser *parser){
     return COMMAND_C;
 }
 
+// Extracts the symbol or decimal value from an A- or L-instruction.
 char *parser_symbol(Parser *parser){
     if(!parser) return NULL;
 
@@ -215,6 +221,7 @@ char *parser_symbol(Parser *parser){
     }
 }
 
+// Extracts the dest mnemonic from a C-instruction, or NULL if omitted.
 char *parser_dest(Parser *parser){
     if(!parser || parser_command_type(parser) != COMMAND_C) return NULL;
     
@@ -231,6 +238,7 @@ char *parser_dest(Parser *parser){
     return NULL;
 }
 
+// Extracts the comp mnemonic from a C-instruction.
 char *parser_comp(Parser *parser){
     if(!parser || parser_command_type(parser) != COMMAND_C) return NULL;
 
@@ -262,6 +270,7 @@ char *parser_comp(Parser *parser){
     return parser->curcomp;
 }
 
+// Extracts the jump mnemonic from a C-instruction, or NULL if omitted.
 char *parser_jmp(Parser *parser){
     if(!parser || parser_command_type(parser) != COMMAND_C) return NULL;
 
@@ -281,6 +290,7 @@ char *parser_jmp(Parser *parser){
     return NULL;
 }
 
+// Rewinds parser index to restart iteration from the beginning.
 void parser_reset(Parser *parser){
     if(!parser) return;
     parser->curcommand = -1;

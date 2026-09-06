@@ -5,17 +5,19 @@
 
 #define BUCKET_COUNT 1024
 
+// Linked list node for handling hash collisions.
 typedef struct _node{
     char *symbol;
     int address;
     struct _node *next;
 } Node;
 
-
+// Hash table with separate chaining buckets.
 typedef struct _symboltable{
     Node *buckets[BUCKET_COUNT];
 } SymbolTable;
 
+// djb2 hash function mapping string to bucket index.
 static unsigned int _hash (const char *str){
     unsigned long hash = 5381;
     int c;
@@ -25,6 +27,7 @@ static unsigned int _hash (const char *str){
     return hash % BUCKET_COUNT;
 }
 
+// Inserts a new symbol-address pair into the table.
 void symboltable_addEntry(SymbolTable *st, char *symbol, int address){
     if(!st || !symbol) return;
 
@@ -45,6 +48,7 @@ void symboltable_addEntry(SymbolTable *st, char *symbol, int address){
     return;
 }
 
+// Checks if a symbol already exists in the table.
 bool symboltable_contains(SymbolTable *st, char *symbol){
     if(!st || !symbol) return false;
 
@@ -57,6 +61,7 @@ bool symboltable_contains(SymbolTable *st, char *symbol){
     return false;
 }
 
+// Retrieves the address associated with a symbol, or -1 if missing.
 int symboltable_getAddress(SymbolTable *st, char *symbol){
     if(!st || !symbol) return -1;
 
@@ -69,6 +74,7 @@ int symboltable_getAddress(SymbolTable *st, char *symbol){
     return -1;
 }
 
+// Allocates table and pre-populates predefined Hack symbols.
 SymbolTable *symboltable_create(){
     SymbolTable *st = (SymbolTable *) malloc (sizeof(SymbolTable));
     if(!st){
@@ -106,6 +112,7 @@ SymbolTable *symboltable_create(){
     return st;
 }
 
+// Deallocates all table nodes, strings, and the table itself.
 void symboltable_delete(SymbolTable **st_ref) {              
         if (!st_ref || !(*st_ref)) return;                       
                                                                  

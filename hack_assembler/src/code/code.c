@@ -3,11 +3,13 @@
 #include <stdio.h>
 #include <string.h>
 
+// Mapping between assembly mnemonic and binary bits.
 typedef struct {
     char *mnemonic;
     char *bits;
 } Entry;
 
+// Lookup table for destination field (3 bits).
 static const Entry DEST_TABLE[] = {
     {"null", "000"},
     {"M", "001"},
@@ -22,6 +24,7 @@ static const Entry DEST_TABLE[] = {
 static const size_t DEST_TABLE_SIZE = sizeof(DEST_TABLE) / sizeof(DEST_TABLE[0]); 
 
 
+// Lookup table for computation field (7 bits: a + c1..c6).
 static const Entry COMP_TABLE[] = {
     {"0", "0101010"},
     {"1", "0111111"},
@@ -55,8 +58,7 @@ static const Entry COMP_TABLE[] = {
 
 static const size_t COMP_TABLE_SIZE = sizeof(COMP_TABLE) / sizeof(COMP_TABLE[0]); 
 
-
-
+// Lookup table for jump field (3 bits).
 static const Entry JMP_TABLE[] = {
     {"null", "000"},
     {"JGT", "001"},
@@ -68,10 +70,10 @@ static const Entry JMP_TABLE[] = {
     {"JMP", "111"}
 };
 
-
 static const size_t JMP_TABLE_SIZE = sizeof(JMP_TABLE) / sizeof(JMP_TABLE[0]); 
 
 
+// Translates dest mnemonic to 3-bit binary string.
 char *code_dest (char *dest_mnemonic){
     if(!dest_mnemonic) return "000";
     for(size_t i = 0; i < DEST_TABLE_SIZE; i++){
@@ -82,6 +84,7 @@ char *code_dest (char *dest_mnemonic){
     return NULL;
 }
 
+// Translates comp mnemonic to 7-bit binary string.
 char *code_comp (char *comp_mnemonic){
     if(!comp_mnemonic) return "0000000";
     for(size_t i = 0; i < COMP_TABLE_SIZE; i++){
@@ -91,6 +94,8 @@ char *code_comp (char *comp_mnemonic){
     }
     return NULL;
 }
+
+// Translates jump mnemonic to 3-bit binary string.
 char *code_jmp (char *jmp_mnemonic){
     if(!jmp_mnemonic) return "000";
     for(size_t i = 0; i < JMP_TABLE_SIZE; i++){
