@@ -38,6 +38,7 @@ void int_to_bin16(int value, char *dest) {
 int main(int argc, char *argv[]){
     if(argc != 2){
         printf("CORRECT USAGE: ./assembler [.asm code]");
+        exit(1);
     }
     char *assembly_filename = argv[1];
     FILE *hack_file = create_hack_file(assembly_filename);

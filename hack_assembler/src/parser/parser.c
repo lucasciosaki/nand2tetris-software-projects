@@ -124,6 +124,7 @@ Parser *parser_create(FILE *file_assembly){
         parser->commands[parser->ncommands++] = command;
     }
     free(buffer);
+    buffer = NULL;
     
     if(parser->ncommands == 0) return parser;
 
@@ -281,7 +282,7 @@ char *parser_jmp(Parser *parser){
     for(size_t i = 0; i < strlen(command); i++){
         if (command[i] == ';')
         {
-            strncpy(parser->curjmp, command + i + 1, strlen(command) - i);
+            strncpy(parser->curjmp, command + i + 1, sizeof(parser->curjmp) - i);
             parser->curjmp[strlen(command) - i] = '\0';
             return parser->curjmp;
         }
