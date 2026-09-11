@@ -92,7 +92,7 @@ Parser *parser_create(FILE *file_vm){
             if (buffer[r] != '\r' && buffer[r] != '\n') {      
                 if(buffer[r] == ' ' || buffer[r] == '\t'){
                     if(!spacing && w > 0){
-                        buffer[w++] = buffer[r];  
+                        buffer[w++] = ' ';  
                         spacing = true;
                     }
                 }    
@@ -103,7 +103,12 @@ Parser *parser_create(FILE *file_vm){
                
             }                                                                                       
             r++;                                                                                    
-        }                                                                                           
+        }                                
+        
+        if (w > 0 && buffer[w - 1] == ' ') {             
+            w--;                                         
+        }          
+
         buffer[w] = '\0';                                                                           
                                                                                                     
                                                                              
@@ -129,6 +134,7 @@ Parser *parser_create(FILE *file_vm){
         parser->commands[parser->ncommands++] = command;
     }
     free(buffer);
+    buffer = NULL;
     
     if(parser->ncommands == 0) return parser;
 
@@ -266,7 +272,8 @@ int parser_arg2(Parser *parser){
     commandComponent = strtok(NULL, " ");
     
     commandComponent = strtok(NULL, " ");
-    
+
+    if(!commandComponent) return __INT_MAX__;
     return atoi(commandComponent);
 }
 

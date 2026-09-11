@@ -45,6 +45,8 @@ void translate_file(Parser *parser, CodeWriter *cw){
     {
         parser_advance(parser);
         CommandType commandtype = parser_command_type(parser);
+        char *segment;
+        int index;
         switch (commandtype)
         {
         case C_ARITHMETIC:
@@ -53,11 +55,19 @@ void translate_file(Parser *parser, CodeWriter *cw){
             break;
         
         case C_PUSH:
-            char *segment = parser_arg1(parser);
+            segment = parser_arg1(parser);
             
-            int index = parser_arg2(parser);
+            index = parser_arg2(parser);
             
             codewriter_write_pushpop(cw, "push", segment, index);
+            break;
+        
+        case C_POP:
+            segment = parser_arg1(parser);
+            
+            index = parser_arg2(parser);
+            
+            codewriter_write_pushpop(cw, "pop", segment, index);
             break;
         
         default:
