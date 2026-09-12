@@ -88,6 +88,25 @@ void translate_file(Parser *parser, CodeWriter *cw){
             codewriter_write_if(cw, arg1);
             break; 
 
+        case C_CALL:
+            arg1 = parser_arg1(parser);
+            arg2 = parser_arg2(parser);
+
+            codewriter_write_call(cw, arg1, arg2);
+            break; 
+        
+        case C_FUNCTION:
+            arg1 = parser_arg1(parser);
+            arg2 = parser_arg2(parser);
+
+            codewriter_write_function(cw, arg1, arg2);
+            break; 
+
+        case C_RETURN:
+        
+            codewriter_write_return(cw);
+            break; 
+
         default:
             break;
         }
@@ -117,6 +136,8 @@ int main(int argc, char *argv[]){
         if(!dir){
             exit(3);
         }
+
+        codewriter_write_init(cw);
         struct dirent *entry;
         while((entry = readdir(dir)) != NULL){
             if( strcmp(entry->d_name, ".") == 0 ||

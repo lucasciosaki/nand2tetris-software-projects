@@ -14,5 +14,8 @@ void codewriter_write_pushpop(CodeWriter *cw, char *command, char *segment, int 
 void codewriter_write_label(CodeWriter *cw, char *label);
 void codewriter_write_goto(CodeWriter *cw, char *label);
 void codewriter_write_if(CodeWriter *cw, char *label);
+void codewriter_write_call(CodeWriter *cw, char *function, int nArgs);
+void codewriter_write_function(CodeWriter *cw,  char *function, int nLocals);
+void codewriter_write_return(CodeWriter *cw);
 
 #endif

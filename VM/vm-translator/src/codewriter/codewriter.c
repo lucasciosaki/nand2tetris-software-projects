@@ -21,6 +21,9 @@ void codewriter_write_label(CodeWriter *cw, char *label);
 void codewriter_write_goto(CodeWriter *cw, char *label);
 void codewriter_write_if(CodeWriter *cw, char *label);
 
+void codewriter_write_call(CodeWriter *cw, char *function, int nArgs);
+void codewriter_write_function(CodeWriter *cw,  char *function, int nLocals);
+void codewriter_write_return(CodeWriter *cw);
 
 void codewriter_write_init(CodeWriter *cw){
     if(!cw || !cw->output_file) return;
@@ -28,9 +31,9 @@ void codewriter_write_init(CodeWriter *cw){
     fprintf(cw->output_file, "@256\n");
     fprintf(cw->output_file, "D=A\n");
     fprintf(cw->output_file, "@SP\n");
-    fprintf(cw->output_file, "@M=D\n");
+    fprintf(cw->output_file, "M=D\n");
 
-    
+    codewriter_write_call(cw, "Sys.init", 0);
 
     return;
 }
@@ -401,4 +404,165 @@ void codewriter_write_if(CodeWriter *cw, char *label){
     return;
 }
 
+void codewriter_write_call(CodeWriter *cw, char *function, int nArgs){
+    if(!cw || !cw->output_file) return;
+
+    int id = cw->label_id++;
+    //push return-address
+    const char *fn = (cw->current_function[0] != '\0') ? cw->current_function : "bootstrap"; 
+    fprintf(cw->output_file, "@%s$RETURN%d\n", fn, id);
+    fprintf(cw->output_file, "D=A\n");
+    fprintf(cw->output_file, "@SP\n");
+    fprintf(cw->output_file, "AM=M+1\n");
+    fprintf(cw->output_file, "A=A-1\n");
+    fprintf(cw->output_file, "M=D\n");
+
+    //push LCL
+    fprintf(cw->output_file, "@LCL\n");
+    fprintf(cw->output_file, "D=M\n");
+    fprintf(cw->output_file, "@SP\n");
+    fprintf(cw->output_file, "AM=M+1\n");
+    fprintf(cw->output_file, "A=A-1\n");
+    fprintf(cw->output_file, "M=D\n");
+    
+    //push ARG
+    fprintf(cw->output_file, "@ARG\n");
+    fprintf(cw->output_file, "D=M\n");
+    fprintf(cw->output_file, "@SP\n");
+    fprintf(cw->output_file, "AM=M+1\n");
+    fprintf(cw->output_file, "A=A-1\n");
+    fprintf(cw->output_file, "M=D\n");
+    
+    
+    //push THIS
+    fprintf(cw->output_file, "@THIS\n");
+    fprintf(cw->output_file, "D=M\n");
+    fprintf(cw->output_file, "@SP\n");
+    fprintf(cw->output_file, "AM=M+1\n");
+    fprintf(cw->output_file, "A=A-1\n");
+    fprintf(cw->output_file, "M=D\n");
+    
+
+    //push THAT
+    fprintf(cw->output_file, "@THAT\n");
+    fprintf(cw->output_file, "D=M\n");
+    fprintf(cw->output_file, "@SP\n");
+    fprintf(cw->output_file, "AM=M+1\n");
+    fprintf(cw->output_file, "A=A-1\n");
+    fprintf(cw->output_file, "M=D\n");
+    
+    //ARG = SP-n-5
+    fprintf(cw->output_file,"@SP\n");
+    fprintf(cw->output_file,"D=M\n");
+    fprintf(cw->output_file,"@%d\n", nArgs + 5);
+    fprintf(cw->output_file,"D=D-A\n");
+    fprintf(cw->output_file,"@ARG\n");
+    fprintf(cw->output_file, "M=D\n");
+
+    //LCL = SP
+    fprintf(cw->output_file,"@SP\n");
+    fprintf(cw->output_file,"D=M\n");
+    fprintf(cw->output_file,"@LCL\n");
+    fprintf(cw->output_file, "M=D\n");
+
+    //goto function
+    fprintf(cw->output_file, "@%s\n", function);
+    fprintf(cw->output_file, "0;JMP\n");
+    
+    fprintf(cw->output_file, "(%s$RETURN%d)\n", fn, id);
+
+    return;
+}
+
+void codewriter_write_function(CodeWriter *cw,  char *function, int nLocals){
+    if(!cw || !cw->output_file) return;
+
+    //cw->current_function = function;
+    strcpy(cw->current_function, function);
+
+    fprintf(cw->output_file, "(%s)\n", function); //(function)
+
+    //Initiate locals = 0
+    if(nLocals > 0){
+        fprintf(cw->output_file, "@SP\n"); //A = SP
+        fprintf(cw->output_file, "D=M\n"); // D = StackBase
+
+        fprintf(cw->output_file, "@LCL\n"); // A = LCL
+        fprintf(cw->output_file, "AM=D\n"); // A = LocalBase = StackBase
+
+    }
+    for(int i = 0; i < nLocals; i++){
+        fprintf(cw->output_file, "M=0\n"); // *(Localbase + i) = 0
+
+        if(i != nLocals - 1)
+            fprintf(cw->output_file, "A=A+1\n"); // A = Localbase + i + 1
+        else{
+            fprintf(cw->output_file, "D=A+1\n"); // D = Localbase + i + 1
+            fprintf(cw->output_file, "@SP\n"); // A = SP
+            fprintf(cw->output_file, "M=D\n"); // StackBase = Localbase + i + 1
+        }
+    }
+    
+}
+
+void codewriter_write_return(CodeWriter *cw){
+
+    
+    fprintf(cw->output_file, "@LCL\n");
+    fprintf(cw->output_file, "D=M\n"); //D = LCL
+
+    fprintf(cw->output_file, "@R14\n"); //&FRAME = R14 
+    fprintf(cw->output_file, "M=D\n"); //FRAME = LCL 
+
+
+    fprintf(cw->output_file, "@5\n"); 
+    fprintf(cw->output_file, "A=D-A\n"); //A = FRAME - 5
+    fprintf(cw->output_file, "D=M\n"); //D = *(FRAME - 5)
+
+    fprintf(cw->output_file, "@R15\n"); //&RET = R15 
+    fprintf(cw->output_file, "M=D\n"); //RET = *(FRAME - 5) 
+
+
+    fprintf(cw->output_file, "@SP\n"); //A = SP
+    fprintf(cw->output_file, "AM=M-1\n"); //A = StackBase
+    fprintf(cw->output_file, "D=M\n"); //D = pop()
+
+    fprintf(cw->output_file, "@ARG\n"); //A = ARG
+    fprintf(cw->output_file, "A=M\n");  //A = ArgBase
+    fprintf(cw->output_file, "M=D\n");  //*(ArgBase) = pop()
+
+    fprintf(cw->output_file, "D=A\n"); //D = ArgBase
+    fprintf(cw->output_file, "@SP\n"); //A = SP
+    fprintf(cw->output_file, "M=D+1\n"); //StackBase = ArgBase + 1
+
+    fprintf(cw->output_file, "@R14\n");
+    fprintf(cw->output_file, "AM=M-1\n"); //A = *(R14) = FRAME - 1
+    fprintf(cw->output_file, "D=M\n"); // D = *(FRAME - 1)
+    fprintf(cw->output_file, "@THAT\n");
+    fprintf(cw->output_file, "M=D\n"); // That = *(FRAME - 1)
+    
+
+    fprintf(cw->output_file, "@R14\n");
+    fprintf(cw->output_file, "AM=M-1\n"); //A = *(R14) = FRAME - 2
+    fprintf(cw->output_file, "D=M\n"); // D = *(FRAME - 2)
+    fprintf(cw->output_file, "@THIS\n");
+    fprintf(cw->output_file, "M=D\n"); // This = *(FRAME - 2)
+    
+    fprintf(cw->output_file, "@R14\n");
+    fprintf(cw->output_file, "AM=M-1\n"); //A = *(R14) = FRAME - 3
+    fprintf(cw->output_file, "D=M\n"); // D = *(FRAME - 3)
+    fprintf(cw->output_file, "@ARG\n");
+    fprintf(cw->output_file, "M=D\n"); // Arg = *(FRAME - 3)
+
+    fprintf(cw->output_file, "@R14\n");
+    fprintf(cw->output_file, "AM=M-1\n"); //A = *(R14) = FRAME - 4
+    fprintf(cw->output_file, "D=M\n"); // D = *(FRAME - 4)
+    fprintf(cw->output_file, "@LCL\n");
+    fprintf(cw->output_file, "M=D\n"); // Lcl = *(FRAME - 4)
+
+    fprintf(cw->output_file, "@R15\n");
+    fprintf(cw->output_file, "A=M\n");
+    fprintf(cw->output_file, "0;JMP\n");
+    
+}
 
