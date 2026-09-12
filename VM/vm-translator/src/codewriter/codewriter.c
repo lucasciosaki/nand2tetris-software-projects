@@ -7,14 +7,33 @@
 typedef struct _code_writer {
     FILE *output_file;
     char current_VM_filename[256];
+    char current_function[256];
     int label_id;
 } CodeWriter;
 
 CodeWriter *codewriter_from_filename(char *filename_output);
 CodeWriter *codewriter_create(FILE *file_output);
 void codewriter_set_filename(CodeWriter *cw, char *vm_filename);
+void codewriter_write_init(CodeWriter *cw);
 void codewriter_write_arithmetic(CodeWriter *cw, char *command);
 void codewriter_write_pushpop(CodeWriter *cw, char *command, char *segment, int index);
+void codewriter_write_label(CodeWriter *cw, char *label);
+void codewriter_write_goto(CodeWriter *cw, char *label);
+void codewriter_write_if(CodeWriter *cw, char *label);
+
+
+void codewriter_write_init(CodeWriter *cw){
+    if(!cw || !cw->output_file) return;
+
+    fprintf(cw->output_file, "@256\n");
+    fprintf(cw->output_file, "D=A\n");
+    fprintf(cw->output_file, "@SP\n");
+    fprintf(cw->output_file, "@M=D\n");
+
+    
+
+    return;
+}
 
 CodeWriter *codewriter_from_filename(char *filename_output){
     
@@ -48,6 +67,7 @@ CodeWriter *codewriter_create(FILE *file_output){
 
     cw->output_file = file_output;
     strcpy(cw->current_VM_filename, "");
+    strcpy(cw->current_function, "");
     cw->label_id = 0;
 
     return cw;
@@ -121,7 +141,7 @@ void codewriter_write_arithmetic(CodeWriter *cw, char *command){
         fprintf(cw->output_file, "D=M-D\n"); //5. D = x - y
         fprintf(cw->output_file, "M=-1\n"); //6. RAM[StackAddress] = -1
         fprintf(cw->output_file, "@GT_END_%d\n", id); //7. A = GT_END
-        fprintf(cw->output_file, "D;JGT\n"); //8. If x = y : goto GT_END
+        fprintf(cw->output_file, "D;JGT\n"); //8. If x > y : goto GT_END
         fprintf(cw->output_file, "@SP\n"); // 9. A = SP
         fprintf(cw->output_file, "A=M-1\n"); //10. A = StackAddress-1
         fprintf(cw->output_file, "M=0\n"); // 11. RAM[StackAddress - 1] = 0
@@ -138,7 +158,7 @@ void codewriter_write_arithmetic(CodeWriter *cw, char *command){
         fprintf(cw->output_file, "D=M-D\n"); //5. D = x - y
         fprintf(cw->output_file, "M=-1\n"); //6. RAM[StackAddress] = -1
         fprintf(cw->output_file, "@LT_END_%d\n", id); //7. A = LT_END
-        fprintf(cw->output_file, "D;JLT\n"); //8. If x = y : goto LT_END
+        fprintf(cw->output_file, "D;JLT\n"); //8. If x < y : goto LT_END
         fprintf(cw->output_file, "@SP\n"); // 9. A = SP
         fprintf(cw->output_file, "A=M-1\n"); //10. A = StackAddress-1
         fprintf(cw->output_file, "M=0\n"); // 11. RAM[StackAddress - 1] = 0
@@ -354,4 +374,31 @@ void codewriter_write_pushpop(CodeWriter *cw, char *command, char *segment, int 
 
     }
 }
+
+void codewriter_write_label(CodeWriter *cw, char *label){
+    if(!cw || !cw->output_file) return;
+    
+    fprintf(cw->output_file, "(%s$%s)\n", cw->current_function, label);
+    return;
+}
+
+void codewriter_write_goto(CodeWriter *cw, char *label){
+    if(!cw || !cw->output_file) return;
+
+    fprintf(cw->output_file, "@%s$%s\n", cw->current_function, label);
+    fprintf(cw->output_file, "0;JMP\n");
+}
+
+void codewriter_write_if(CodeWriter *cw, char *label){
+    if(!cw || !cw->output_file) return;
+
+    fprintf(cw->output_file, "@SP\n"); // A = SP
+    fprintf(cw->output_file, "AM=M-1\n"); // A, StackBase = StackBase - 1
+    fprintf(cw->output_file, "D=M\n"); // D = StackBase - 1
+    fprintf(cw->output_file, "@%s$%s\n", cw->current_function, label);
+    fprintf(cw->output_file, "D;JNE\n"); // if D != 0 -> goto label
+
+    return;
+}
+
 
